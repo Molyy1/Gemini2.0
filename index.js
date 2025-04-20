@@ -5,10 +5,11 @@ const PORT = 3000;
 
 // Replace with your actual Gemini API key
 const GEMINI_API_KEY = 'AIzaSyDpNGBJDbBWhqREWm2kUFso7uqXws2FScU';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 app.use(express.json());
 
+// /edit endpoint: Accepts text and image URL, sends to Gemini API
 app.get('/edit', async (req, res) => {
   const { text, url } = req.query;
 
@@ -40,9 +41,6 @@ app.get('/edit', async (req, res) => {
           ],
         },
       ],
-      generationConfig: {
-        response_mime_type: "image/png"
-      }
     };
 
     // Send the request to the Gemini API
@@ -50,20 +48,20 @@ app.get('/edit', async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      responseType: 'arraybuffer',
     });
 
-    // Convert the response to base64
-    const editedImageBase64 = Buffer.from(geminiResponse.data, 'binary').toString('base64');
+    // Extract and return the generated text from the response
+    const generatedText =
+      geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini API';
 
-    // Send the edited image as a base64-encoded string
-    res.json({ image: `data:image/png;base64,${editedImageBase64}` });
+    res.json({ result: generatedText });
   } catch (error) {
     console.error('Error processing /edit request:', error.message);
     res.status(500).json({ error: 'Failed to process the request' });
   }
 });
 
+// Start the Express server
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
 });
